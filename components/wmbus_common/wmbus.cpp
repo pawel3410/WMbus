@@ -2087,8 +2087,11 @@ bool Telegram::parseTPL(std::vector<uchar>::iterator &pos) {
     header_size = std::distance(frame.begin(), pos);
     int num_mfct_bytes =
         (int)std::distance(pos, frame.end()) - (int)suffix_size;
-    if (num_mfct_bytes < 0)
+    if (num_mfct_bytes < 0) {
+      warning("(wmbus) FIX-v2: mfct-specific tpl too short (%d), clamped\n",
+              num_mfct_bytes);
       num_mfct_bytes = 0;
+    }
     std::string info = bin2hex(pos, frame.end(), num_mfct_bytes);
     info += " mfct specific";
     addExplanationAndIncrementPos(pos, num_mfct_bytes, KindOfData::CONTENT,
