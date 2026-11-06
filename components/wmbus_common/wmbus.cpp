@@ -900,6 +900,12 @@ void Telegram::addExplanationAndIncrementPos(std::vector<uchar>::iterator &pos,
   vsnprintf(buf, 1023, fmt, args);
   va_end(args);
 
+  int avail = (int)std::distance(pos, frame.end());
+  if (len < 0)
+    len = 0;
+  if (len > avail)
+    len = avail;
+
   Explanation e(parsed.size(), len, buf, k, u);
   explanations.push_back(e);
   parsed.insert(parsed.end(), pos, pos + len);
@@ -2079,11 +2085,14 @@ bool Telegram::parseTPL(std::vector<uchar>::iterator &pos) {
   default: {
     // A0 to B7 are manufacturer specific.
     header_size = std::distance(frame.begin(), pos);
-    int num_mfct_bytes = frame.end() - pos - suffix_size;
+    int num_mfct_bytes =
+        (int)std::distance(pos, frame.end()) - (int)suffix_size;
+    if (num_mfct_bytes < 0)
+      num_mfct_bytes = 0;
     std::string info = bin2hex(pos, frame.end(), num_mfct_bytes);
     info += " mfct specific";
     addExplanationAndIncrementPos(pos, num_mfct_bytes, KindOfData::CONTENT,
-                                  Understanding::NONE, info.c_str());
+                                  Understanding::NONE, "%s", info.c_str());
 
     return true; // Manufacturer specific telegram payload. Oh well....
   }
