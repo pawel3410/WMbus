@@ -2037,30 +2037,15 @@ bool Telegram::parse_TPL_7A(std::vector<uchar>::iterator &pos) {
 }
 
 bool Telegram::parseTPL(std::vector<uchar>::iterator &pos) {
-    // Bezpieczne sprawdzenie, czy iterator nie wyszedł poza zakres wektora
-    if (pos >= frame.end() || pos < frame.begin()) {
-        return expectedMore(__LINE__);
-    }
+  int remaining = std::distance(pos, frame.end());
+  if (remaining == 0)
+    return false;
 
-    int remaining = std::distance(pos, frame.end());
-    if (remaining < 1)
-        return expectedMore(__LINE__);
-
-    debug("(wmbus) parseTPL @%d %d\n", std::distance(frame.begin(), pos),
-          remaining);
-          
-    int ci_field = *pos;
-    int mfct_specific = isCiFieldManufacturerSpecific(ci_field);
-//bool Telegram::parseTPL(std::vector<uchar>::iterator &pos) {
-//  int remaining = std::distance(pos, frame.end());
-//  if (remaining == 0)
-//    return false;
-//
-//  debug("(wmbus) parseTPL @%d %d\n", std::distance(frame.begin(), pos),
-//        remaining);
-//  CHECK(1);
-//  int ci_field = *pos;
-//  int mfct_specific = isCiFieldManufacturerSpecific(ci_field);
+  debug("(wmbus) parseTPL @%d %d\n", std::distance(frame.begin(), pos),
+        remaining);
+  CHECK(1);
+  int ci_field = *pos;
+  int mfct_specific = isCiFieldManufacturerSpecific(ci_field);
 
   if (!isCiFieldOfType(ci_field, CI_TYPE::TPL) && !mfct_specific) {
     addExplanationAndIncrementPos(pos, 1, KindOfData::PROTOCOL,
