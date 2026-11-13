@@ -13,7 +13,7 @@
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
+ You should have received a query of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -67,10 +67,12 @@ namespace
                             "manufacture_year,timestamp");
         di.setMeterType(MeterType::WaterMeter);
         di.addLinkMode(LinkMode::T1);
-        // Obsługa nowych modułów Diehl/IZAR raportujących jako MAD (0x3424)
-        di.addDetection(MANUFACTURER_MAD, 0x20, -1);
-        di.addDetection(MANUFACTURER_MAD, 0xA2, -1);
-        di.addDetection(MANUFACTURER_MAD, 0xA1, -1);
+        
+        // 0x3424 to kod producenta MAD (zaprogramowany jako int: (0x24 << 8) | 0x34 = 0x3424)
+        // Rejestracja dla nowych modułów Diehl/IZAR z różnymi wariantami CI / typów łącza
+        di.addDetection(0x3424, 0x20, -1);
+        di.addDetection(0x3424, 0xA2, -1);
+        di.addDetection(0x3424, 0xA1, -1);
         di.usesProcessContent();
 
         di.setConstructor([](MeterInfo& mi, DriverInfo& di){ return std::shared_ptr<Meter>(new Driver(mi, di)); });
@@ -188,26 +190,24 @@ namespace
         t->extractFrame(&frame);
         std::vector<uchar> origin = t->original.empty() ? frame : t->original;
 
-        // Pre-processing / rotacja pola adresowego dla nowych ramek MAD
+        // Pre-processing / rotacja (swapping) pola adresowego zgodna ze standardem Diehl w manufacturer_specificities.cpp
         if (origin.size() >= 10) {
-            uchar temp0 = origin[4];
-            uchar temp1 = origin[5];
-            origin[4] = origin[6];
-            origin[5] = origin[7];
-            origin[6] = origin[8];
-            origin[7] = origin[9];
-            origin[8] = temp0;
-            origin[9] = temp1;
+            uchar version = origin[4];
+            uchar type = origin[5];
+            for (int i = 4; i < 8; i++) {
+                origin[i] = origin[i + 2];
+            }
+            origin[8] = version;
+            origin[9] = type;
         }
         if (frame.size() >= 10) {
-            uchar temp0 = frame[4];
-            uchar temp1 = frame[5];
-            frame[4] = frame[6];
-            frame[5] = frame[7];
-            frame[6] = frame[8];
-            frame[7] = frame[9];
-            frame[8] = temp0;
-            frame[9] = temp1;
+            uchar version = frame[4];
+            uchar type = frame[5];
+            for (int i = 4; i < 8; i++) {
+                frame[i] = frame[i + 2];
+            }
+            frame[8] = version;
+            frame[9] = type;
         }
 
         std::vector<uchar> decoded_content;
